@@ -1,4 +1,4 @@
-// SysTrayDemo.cpp : Defines the entry point for the application.
+// Octissimo.cpp : Defines the entry point for the application.
 //
 // based on https://www.codeproject.com/Articles/4768/Basic-use-of-Shell-NotifyIcon-in-Win32
 
@@ -15,7 +15,6 @@ HMENU hPopMenu;
 TCHAR szTitle[MAX_LOADSTRING];               // The title bar text
 TCHAR szWindowClass[MAX_LOADSTRING];         // the main window class name
 TCHAR szApplicationToolTip[MAX_LOADSTRING];       // the main window class name
-BOOL bDisable = FALSE;                     // keep application state
 
 // Forward declarations of functions included in this code module:
 ATOM MyRegisterClass(HINSTANCE hInstance);
@@ -39,7 +38,7 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
 
 	// Initialize global strings
 	LoadString(hInstance, IDS_APP_TITLE, szTitle, MAX_LOADSTRING);
-	LoadString(hInstance, IDC_SYSTRAYDEMO, szWindowClass, MAX_LOADSTRING);
+	LoadString(hInstance, IDC_OCTISSIMO, szWindowClass, MAX_LOADSTRING);
 
 	MyRegisterClass(hInstance);
 
@@ -48,7 +47,7 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
 		return FALSE;
 	}
 
-	hAccelTable = LoadAccelerators(hInstance, MAKEINTRESOURCE(IDC_SYSTRAYDEMO));
+	hAccelTable = LoadAccelerators(hInstance, MAKEINTRESOURCE(IDC_OCTISSIMO));
 
 	// Main message loop:
 	while (GetMessage(&msg, NULL, 0, 0)) {
@@ -85,10 +84,10 @@ ATOM MyRegisterClass(HINSTANCE hInstance) {
 	wcex.cbClsExtra = 0;
 	wcex.cbWndExtra = 0;
 	wcex.hInstance = hInstance;
-	wcex.hIcon = LoadIcon(hInstance, MAKEINTRESOURCE(IDI_SYSTRAYDEMO));
+	wcex.hIcon = LoadIcon(hInstance, MAKEINTRESOURCE(IDI_OCTISSIMO));
 	wcex.hCursor = LoadCursor(NULL, IDC_ARROW);
 	wcex.hbrBackground = (HBRUSH) (COLOR_WINDOW + 1);
-	wcex.lpszMenuName = MAKEINTRESOURCE(IDC_SYSTRAYDEMO);
+	wcex.lpszMenuName = MAKEINTRESOURCE(IDC_OCTISSIMO);
 	wcex.lpszClassName = szWindowClass;
 	wcex.hIconSm = LoadIcon(wcex.hInstance, MAKEINTRESOURCE(IDI_SMALL));
 
@@ -106,6 +105,9 @@ ATOM MyRegisterClass(HINSTANCE hInstance) {
 //        create and display the main program window.
 //
 BOOL InitInstance(HINSTANCE hInstance, int nCmdShow) {
+
+	UNREFERENCED_PARAMETER(nCmdShow);
+
 	HWND hWnd;
 	HICON hMainIcon;
 
@@ -118,11 +120,11 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow) {
 		return FALSE;
 	}
 
-	hMainIcon = LoadIcon(hInstance, (LPCTSTR) MAKEINTRESOURCE(IDI_SYSTRAYDEMO));
+	hMainIcon = LoadIcon(hInstance, (LPCTSTR) MAKEINTRESOURCE(IDI_OCTISSIMO));
 
 	nidApp.cbSize = sizeof(NOTIFYICONDATA); // sizeof the struct in bytes
 	nidApp.hWnd = (HWND) hWnd;              //handle of the window which will process this app. messages
-	nidApp.uID = IDI_SYSTRAYDEMO;           //ID of the icon that willl appear in the system tray
+	nidApp.uID = IDI_OCTISSIMO;           //ID of the icon that willl appear in the system tray
 	nidApp.uFlags = NIF_ICON | NIF_MESSAGE | NIF_TIP; //ORing of all the flags
 	nidApp.hIcon = hMainIcon; // handle of the Icon to be displayed, obtained from LoadIcon
 	nidApp.uCallbackMessage = WM_USER_SHELLICON;
@@ -160,17 +162,10 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) 
 					GetCursorPos(&lpClickPoint);
 					hPopMenu = CreatePopupMenu();
 					InsertMenu(hPopMenu, 0xFFFFFFFF, MF_BYPOSITION | MF_STRING, IDM_ABOUT, _T("About"));
-					if (bDisable == TRUE) {
-						uFlag |= MF_GRAYED;
-					}
-					InsertMenu(hPopMenu, 0xFFFFFFFF, uFlag, IDM_TEST2, _T("Test 2")); // Test 2
-					InsertMenu(hPopMenu, 0xFFFFFFFF, uFlag, IDM_TEST1, _T("Test 1")); // Test 1
 					InsertMenu(hPopMenu, 0xFFFFFFFF, MF_SEPARATOR, IDM_SEP, _T("SEP"));
-					if (bDisable == TRUE) {
-						InsertMenu(hPopMenu, 0xFFFFFFFF, MF_BYPOSITION | MF_STRING, IDM_ENABLE, _T("Enable"));
-					} else {
-						InsertMenu(hPopMenu, 0xFFFFFFFF, MF_BYPOSITION | MF_STRING, IDM_DISABLE, _T("Disable"));
-					}
+					InsertMenu(hPopMenu, 0xFFFFFFFF, uFlag, IDM_ONLINE, _T("Online"));
+					InsertMenu(hPopMenu, 0xFFFFFFFF, uFlag, IDM_INVISIBLE, _T("Invisible"));
+					InsertMenu(hPopMenu, 0xFFFFFFFF, uFlag, IDM_OFFLINE, _T("Offline"));
 					InsertMenu(hPopMenu, 0xFFFFFFFF, MF_SEPARATOR, IDM_SEP, _T("SEP"));
 					InsertMenu(hPopMenu, 0xFFFFFFFF, MF_BYPOSITION | MF_STRING, IDM_EXIT, _T("Exit"));
 
@@ -189,17 +184,11 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) 
 				case IDM_ABOUT:
 					DialogBox(hInst, MAKEINTRESOURCE(IDD_ABOUTBOX), hWnd, About);
 					break;
-				case IDM_TEST1:
-					MessageBox(NULL, _T("This is a test for menu Test 1"), _T("Test 1"), MB_OK);
+				case IDM_ONLINE:
 					break;
-				case IDM_TEST2:
-					MessageBox(NULL, _T("This is a test for menu Test 2"), _T("Test 2"), MB_OK);
+				case IDM_INVISIBLE:
 					break;
-				case IDM_DISABLE:
-					bDisable = TRUE;
-					break;
-				case IDM_ENABLE:
-					bDisable = FALSE;
+				case IDM_OFFLINE:
 					break;
 				case IDM_EXIT:
 					Shell_NotifyIcon(NIM_DELETE, &nidApp);

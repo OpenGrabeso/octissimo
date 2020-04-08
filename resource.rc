@@ -4,40 +4,23 @@
 #include "windows.h"
 #undef APSTUDIO_HIDDEN_SYMBOLS
 
-IDI_SYSTRAYDEMO         ICON                    "Res/user-online.ico"
+IDI_OCTISSIMO         ICON                    "Res/user-online.ico"
 IDI_SMALL               ICON                    "Res/small.ico"
-
-IDC_SYSTRAYDEMO MENU
-BEGIN
-    POPUP "SysTrayMenu"
-    BEGIN
-        MENUITEM "&About ...",                  IDM_ABOUT
-        MENUITEM "Test 1",                      IDM_TEST1
-        MENUITEM "Test 2",                      IDM_TEST2
-        MENUITEM SEPARATOR
-        MENUITEM "Enable",                      IDM_ENABLE
-        MENUITEM "Disable",                     IDM_DISABLE
-        MENUITEM SEPARATOR
-        MENUITEM "E&xit",                       IDM_EXIT
-        MENUITEM "SEP",                         IDM_SEP
-    END
-END
 
 IDD_ABOUTBOX DIALOGEX 22, 17, 230, 75
 STYLE DS_SETFONT | DS_MODALFRAME | WS_CAPTION | WS_SYSMENU
 CAPTION "About"
 FONT 8, "System", 0, 0, 0x0
 BEGIN
-    ICON            IDI_SYSTRAYDEMO,IDC_MYICON,14,9,20,20
-    CTEXT           "SysTrayDemo Version 1.0",IDC_STATIC,49,10,119,8,SS_NOPREFIX
-    CTEXT           "Copyright (C) 2007",IDC_STATIC,49,20,119,8
+    ICON            IDI_OCTISSIMO,IDC_MYICON,14,9,20,20
+    CTEXT           "Octissimo Version 1.0",IDC_STATIC,49,10,119,8,SS_NOPREFIX
+    CTEXT           "Copyright (C) 2020 Ondrej Spanel",IDC_STATIC,49,20,119,8
     DEFPUSHBUTTON   "OK",IDOK,195,6,30,11,WS_GROUP
-    CTEXT           "Demo Developed By Mark Zitnik",IDC_STATIC,49,31,108,8
 END
 
 STRINGTABLE
 BEGIN
-    IDS_APP_TITLE           "SysTrayDemo"
-    IDS_APPTOOLTIP          "SysTray Demo"
-    IDC_SYSTRAYDEMO         "SYSTRAYDEMO"
+    IDS_APP_TITLE         "Octissimo"
+    IDS_APPTOOLTIP        "Octissimo"
+    IDC_OCTISSIMO         "OCTISSIMO"
 END
