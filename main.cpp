@@ -4,6 +4,7 @@
 
 #include "win.h"
 #include "resource.h"
+#include "GithubStatus.h"
 
 #define MAX_LOADSTRING 100
 #define   WM_USER_SHELLICON (WM_USER + 1)
@@ -15,6 +16,9 @@ TCHAR szTitle[MAX_LOADSTRING];               // The title bar text
 TCHAR szWindowClass[MAX_LOADSTRING];         // the main window class name
 TCHAR szApplicationToolTip[MAX_LOADSTRING];       // the main window class name
 
+GithubStatus *status;
+Status lastStatus;
+
 ATOM MyRegisterClass(HINSTANCE hInstance);
 
 BOOL InitInstance(HINSTANCE, int nCmdShow);
@@ -23,10 +27,19 @@ LRESULT CALLBACK WndProc(HWND, UINT, WPARAM, LPARAM);
 
 INT_PTR CALLBACK About(HWND, UINT, WPARAM, LPARAM);
 
-int APIENTRY _tWinMain(HINSTANCE hInstance,
-							  HINSTANCE hPrevInstance,
-							  LPTSTR lpCmdLine,
-							  int nCmdShow) {
+void StatusReceived(const Status &s) {
+	lastStatus = s;
+	strncpy(nidApp.szTip, lastStatus.message, sizeof(nidApp.szTip) - 1);
+	nidApp.uFlags |= NIF_TIP;
+	Shell_NotifyIcon(NIM_MODIFY, &nidApp);
+}
+
+void UpdateStatus() {
+	status->update(StatusReceived);
+}
+
+
+int APIENTRY _tWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPTSTR lpCmdLine, int nCmdShow) {
 	UNREFERENCED_PARAMETER(hPrevInstance);
 	UNREFERENCED_PARAMETER(lpCmdLine);
 
@@ -41,6 +54,9 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
 	if (!InitInstance(hInstance, nCmdShow)) {
 		return FALSE;
 	}
+
+	status = new GithubStatus();
+	UpdateStatus();
 
 	hAccelTable = LoadAccelerators(hInstance, MAKEINTRESOURCE(IDC_OCTISSIMO));
 
@@ -124,9 +140,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) 
 					hPopMenu = CreatePopupMenu();
 					InsertMenu(hPopMenu, 0xFFFFFFFF, MF_BYPOSITION | MF_STRING, IDM_ABOUT, _T("About"));
 					InsertMenu(hPopMenu, 0xFFFFFFFF, MF_SEPARATOR, IDM_SEP, _T("SEP"));
-					InsertMenu(hPopMenu, 0xFFFFFFFF, uFlag, IDM_ONLINE, _T("Online"));
-					InsertMenu(hPopMenu, 0xFFFFFFFF, uFlag, IDM_INVISIBLE, _T("Invisible"));
-					InsertMenu(hPopMenu, 0xFFFFFFFF, uFlag, IDM_OFFLINE, _T("Offline"));
+					InsertMenu(hPopMenu, 0xFFFFFFFF, uFlag, IDM_CHECK, _T("Check status"));
 					InsertMenu(hPopMenu, 0xFFFFFFFF, MF_SEPARATOR, IDM_SEP, _T("SEP"));
 					InsertMenu(hPopMenu, 0xFFFFFFFF, MF_BYPOSITION | MF_STRING, IDM_EXIT, _T("Exit"));
 
@@ -145,11 +159,8 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) 
 				case IDM_ABOUT:
 					DialogBox(hInst, MAKEINTRESOURCE(IDD_ABOUTBOX), hWnd, About);
 					break;
-				case IDM_ONLINE:
-					break;
-				case IDM_INVISIBLE:
-					break;
-				case IDM_OFFLINE:
+				case IDM_CHECK:
+					UpdateStatus();
 					break;
 				case IDM_EXIT:
 					Shell_NotifyIcon(NIM_DELETE, &nidApp);
