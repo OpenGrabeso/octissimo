@@ -8,8 +8,10 @@
 
 #define MAX_LOADSTRING 100
 #define   WM_USER_SHELLICON (WM_USER + 1)
+#define   IDT_TIMER (WM_USER + 2)
 
 HINSTANCE hInst;   // current instance
+HWND hWnd;
 NOTIFYICONDATA nidApp;
 HMENU hPopMenu;
 TCHAR szTitle[MAX_LOADSTRING];               // The title bar text
@@ -27,15 +29,29 @@ LRESULT CALLBACK WndProc(HWND, UINT, WPARAM, LPARAM);
 
 INT_PTR CALLBACK About(HWND, UINT, WPARAM, LPARAM);
 
-void StatusReceived(const Status &s) {
+void StatusReceivedFirst(const Status &s) {
 	lastStatus = s;
 	strncpy(nidApp.szTip, lastStatus.message.c_str(), sizeof(nidApp.szTip) - 1);
 	nidApp.uFlags |= NIF_TIP;
 	Shell_NotifyIcon(NIM_MODIFY, &nidApp);
 }
 
+void StatusReceivedNext(const Status &s) {
+	auto message = lastStatus.message;
+	StatusReceivedFirst(s);
+	if (lastStatus.message != message) {
+		nidApp.uFlags |= NIF_INFO;
+		strncpy(nidApp.szInfoTitle, "GitHub Status", sizeof(nidApp.szInfoTitle) - 1);
+		strncpy(nidApp.szInfo, lastStatus.message.c_str(), sizeof(nidApp.szInfoTitle) - 1);
+	}
+}
+
+void InitStatus() {
+	status->update(StatusReceivedFirst);
+}
+
 void UpdateStatus() {
-	status->update(StatusReceived);
+	status->update(StatusReceivedNext);
 }
 
 
@@ -56,8 +72,9 @@ int APIENTRY _tWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPTSTR lpCm
 	}
 
 	status = new GithubStatus();
-	UpdateStatus();
+	InitStatus();
 
+	SetTimer(hWnd, IDT_TIMER, 60000, (TIMERPROC) NULL);
 	hAccelTable = LoadAccelerators(hInstance, MAKEINTRESOURCE(IDC_OCTISSIMO));
 
 	while (GetMessage(&msg, NULL, 0, 0)) {
@@ -95,7 +112,6 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow) {
 
 	UNREFERENCED_PARAMETER(nCmdShow);
 
-	HWND hWnd;
 	HICON hMainIcon;
 
 	hInst = hInstance; // Store instance handle in our global variable
@@ -150,6 +166,9 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) 
 					return TRUE;
 
 			}
+			break;
+		case IDT_TIMER:
+			UpdateStatus();
 			break;
 		case WM_COMMAND:
 			wmId = LOWORD(wParam);
