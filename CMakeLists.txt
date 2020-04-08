@@ -5,6 +5,26 @@ set(CMAKE_CXX_STANDARD 20)
 
 include_directories("include")
 
+# searching for include directory
+find_path(WINHTTP_INCLUDE_DIR Winhttp.h)
+
+# searching for library file
+find_library(WINHTTP_LIBRARY Winhttp)
+
+if (WINHTTP_INCLUDE_DIR AND WINHTTP_LIBRARY)
+    # you may need that if further action in your CMakeLists.txt depends
+    # on detecting your library
+    set(WINHTTP_FOUND TRUE)
+
+    # you may need that if you want to conditionally compile some parts
+    # of your code depending on library availability
+    # add_definitions(-DHAVE_LIBSIFTGPU=1)
+
+    # those two, you really need
+    include_directories(${WINHTTP_INCLUDE_DIR})
+    set(YOUR_LIBRARIES ${YOUR_LIBRARIES} ${WINHTTP_LIBRARY})
+endif ()
+
 # Make sure that the resource file is seen as an RC file to be compiled with a resource compiler, not a C++ compiler
 set_source_files_properties(${CMAKE_SOURCE_DIR}/res.rc LANGUAGE RC)
 # For MinGW, we have to change the compile flags
@@ -22,4 +42,5 @@ if(MINGW)
     # For anything else, assumingly Visual Studio at this point, use a different set of compile flags
 endif(MINGW)
 
-add_executable(Octissimo main.cpp resource.rc GithubStatus.cpp GithubStatus.h resource.h)
+add_executable(Octissimo WIN32 main.cpp resource.rc GithubStatus.cpp GithubStatus.h resource.h)
+target_link_libraries(Octissimo ${YOUR_LIBRARIES})
