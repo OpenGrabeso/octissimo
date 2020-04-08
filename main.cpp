@@ -29,7 +29,7 @@ INT_PTR CALLBACK About(HWND, UINT, WPARAM, LPARAM);
 
 void StatusReceived(const Status &s) {
 	lastStatus = s;
-	strncpy(nidApp.szTip, lastStatus.message, sizeof(nidApp.szTip) - 1);
+	strncpy(nidApp.szTip, lastStatus.message.c_str(), sizeof(nidApp.szTip) - 1);
 	nidApp.uFlags |= NIF_TIP;
 	Shell_NotifyIcon(NIM_MODIFY, &nidApp);
 }

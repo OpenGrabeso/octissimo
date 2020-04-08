@@ -7,17 +7,12 @@
 
 #include "win.h"
 #include <Winhttp.h>
+#include <string>
 
 struct Status {
-	const char *icon;
-	const char *message;
-	const char *timestamp;
-
-	Status() {
-		icon = nullptr;
-		message = nullptr;
-		timestamp = nullptr;
-	}
+	std::string icon;
+	std::string message;
+	std::string timestamp;
 };
 
 class WinHttpHandle {
@@ -44,6 +39,9 @@ class GithubStatus {
 	WinHttpHandle hConnect;
 
 	[[nodiscard]] const Status &getStatus() const {return status;}
+
+	static constexpr auto url = L"kctbh9vrtdwd.statuspage.io";
+	static constexpr auto endpoint = L"/api/v2/status.json";
 
 	public:
 	GithubStatus();
