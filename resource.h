@@ -9,6 +9,13 @@
 #define IDM_SEP 1004
 
 #define IDI_OCTISSIMO                 107
-#define IDI_SMALL                       108
+
+#define IDI_CRITICAL 200
+#define IDI_MAJOR 201
+#define IDI_MINOR 202
+#define IDI_NONE 203
+#define IDI_UNKNOWN 204
+
 #define IDC_OCTISSIMO                 109
+
 #define IDC_STATIC                      -1

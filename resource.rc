@@ -4,8 +4,13 @@
 #include "windows.h"
 #undef APSTUDIO_HIDDEN_SYMBOLS
 
-IDI_OCTISSIMO         ICON                    "Res/user-online.ico"
-IDI_SMALL               ICON                    "Res/small.ico"
+IDI_OCTISSIMO ICON "Res/small.ico"
+
+IDI_CRITICAL ICON "Res/critical.ico"
+IDI_MAJOR ICON "Res/major.ico"
+IDI_MINOR ICON "Res/minor.ico"
+IDI_NONE ICON "Res/none.ico"
+IDI_UNKNOWN ICON "Res/unknown.ico"
 
 IDD_ABOUTBOX DIALOGEX 22, 17, 230, 75
 STYLE DS_SETFONT | DS_MODALFRAME | WS_CAPTION | WS_SYSMENU

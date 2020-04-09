@@ -29,10 +29,19 @@ LRESULT CALLBACK WndProc(HWND, UINT, WPARAM, LPARAM);
 
 INT_PTR CALLBACK About(HWND, UINT, WPARAM, LPARAM);
 
+INT StatusIcon(const char *status) {
+	if (!strcmp(status, "none")) return IDI_NONE;
+	if (!strcmp(status, "minor")) return IDI_MINOR;
+	if (!strcmp(status, "major")) return IDI_MAJOR;
+	if (!strcmp(status, "critical")) return IDI_CRITICAL;
+	return IDI_UNKNOWN;
+}
+
 void StatusReceivedFirst(const Status &s) {
 	lastStatus = s;
 	strncpy(nidApp.szTip, lastStatus.message.c_str(), sizeof(nidApp.szTip) - 1);
 	nidApp.uFlags |= NIF_TIP;
+	nidApp.hIcon = LoadIcon(hInst, MAKEINTRESOURCE(StatusIcon(s.icon.c_str())));
 	Shell_NotifyIcon(NIM_MODIFY, &nidApp);
 }
 
@@ -103,7 +112,7 @@ ATOM MyRegisterClass(HINSTANCE hInstance) {
 	wcex.hbrBackground = (HBRUSH) (COLOR_WINDOW + 1);
 	wcex.lpszMenuName = MAKEINTRESOURCE(IDC_OCTISSIMO);
 	wcex.lpszClassName = szWindowClass;
-	wcex.hIconSm = LoadIcon(wcex.hInstance, MAKEINTRESOURCE(IDI_SMALL));
+	wcex.hIconSm = LoadIcon(wcex.hInstance, MAKEINTRESOURCE(IDI_OCTISSIMO));
 
 	return RegisterClassEx(&wcex);
 }
@@ -123,22 +132,18 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow) {
 		return FALSE;
 	}
 
-	hMainIcon = LoadIcon(hInstance, (LPCTSTR) MAKEINTRESOURCE(IDI_OCTISSIMO));
+	hMainIcon = LoadIcon(hInstance, (LPCTSTR) MAKEINTRESOURCE(IDI_NONE));
 
 	nidApp.cbSize = sizeof(NOTIFYICONDATA); // sizeof the struct in bytes
 	nidApp.hWnd = (HWND) hWnd;              //handle of the window which will process this app. messages
 	nidApp.uID = IDI_OCTISSIMO;           //ID of the icon that willl appear in the system tray
 	nidApp.uFlags = NIF_ICON | NIF_MESSAGE | NIF_TIP; //ORing of all the flags
-	nidApp.hIcon = hMainIcon; // handle of the Icon to be displayed, obtained from LoadIcon
+	nidApp.hIcon = LoadIcon(hInstance, (LPCTSTR) MAKEINTRESOURCE(IDI_NONE)); // handle of the Icon to be displayed, obtained from LoadIcon
 	nidApp.uCallbackMessage = WM_USER_SHELLICON;
 	LoadString(hInstance, IDS_APPTOOLTIP, nidApp.szTip, MAX_LOADSTRING);
 	Shell_NotifyIcon(NIM_ADD, &nidApp);
 
 	return TRUE;
-}
-
-void Init() {
-	// user defined message that will be sent as the notification message to the Window Procedure
 }
 
 LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) {
