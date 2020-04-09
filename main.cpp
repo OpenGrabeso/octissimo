@@ -19,6 +19,8 @@ TCHAR szTitle[MAX_LOADSTRING];               // The title bar text
 TCHAR szWindowClass[MAX_LOADSTRING];         // the main window class name
 TCHAR szApplicationToolTip[MAX_LOADSTRING];       // the main window class name
 
+std::string token;
+
 GithubStatus *status;
 Status lastStatus;
 
@@ -28,13 +30,11 @@ BOOL InitInstance(HINSTANCE, int nCmdShow);
 
 LRESULT CALLBACK WndProc(HWND, UINT, WPARAM, LPARAM);
 
-INT_PTR CALLBACK About(HWND, UINT, WPARAM, LPARAM);
-
-INT StatusIcon(const char *status) {
-	if (!strcmp(status, "none")) return IDI_NONE;
-	if (!strcmp(status, "minor")) return IDI_MINOR;
-	if (!strcmp(status, "major")) return IDI_MAJOR;
-	if (!strcmp(status, "critical")) return IDI_CRITICAL;
+INT StatusIcon(const char *statusText) {
+	if (!strcmp(statusText, "none")) return IDI_NONE;
+	if (!strcmp(statusText, "minor")) return IDI_MINOR;
+	if (!strcmp(statusText, "major")) return IDI_MAJOR;
+	if (!strcmp(statusText, "critical")) return IDI_CRITICAL;
 	return IDI_UNKNOWN;
 }
 
@@ -144,8 +144,71 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow) {
 	LoadString(hInstance, IDS_APPTOOLTIP, nidApp.szTip, MAX_LOADSTRING);
 	Shell_NotifyIcon(NIM_ADD, &nidApp);
 
+	HKEY key;
+	if (RegOpenKeyEx(HKEY_CURRENT_USER, _T("Software\\OpenGrabeso\\Octissimo"), 0, KEY_READ, &key) == 0) {
+		TCHAR buffer[100];
+		DWORD size = sizeof(buffer);
+		if (RegGetValue(key, "", _T("token"), RRF_RT_REG_SZ, NULL, buffer, &size) == 0) {
+			token = buffer;
+		}
+		RegCloseKey(key);
+	}
+
 	return TRUE;
 }
+
+
+INT_PTR CALLBACK About(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam) {
+	UNREFERENCED_PARAMETER(lParam);
+	switch (message) {
+		case WM_INITDIALOG:
+			return (INT_PTR) TRUE;
+
+		case WM_COMMAND:
+			if (LOWORD(wParam) == IDOK || LOWORD(wParam) == IDCANCEL) {
+				EndDialog(hDlg, LOWORD(wParam));
+				return (INT_PTR) TRUE;
+			}
+			break;
+	}
+	return (INT_PTR) FALSE;
+}
+
+INT_PTR CALLBACK Login(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam) {
+	UNREFERENCED_PARAMETER(lParam);
+	switch (message) {
+		case WM_INITDIALOG:
+			// security / privacy: we allow the user only to set them token, not to retrieve it
+			//SetDlgItemText(hDlg, IDC_TOKENEDIT, token.c_str());
+			return (INT_PTR) TRUE;
+
+		case WM_COMMAND:
+			if (LOWORD(wParam) == IDOK || LOWORD(wParam) == IDCANCEL) {
+				if (LOWORD(wParam) == IDOK) {
+					TCHAR buffer[100];
+					GetDlgItemText(hDlg, IDC_TOKENEDIT, buffer, sizeof(buffer));
+
+					// as we leave the input empty by default, do not reset the token if user types nothing and presses OK
+					// an alternative would be to disable OK when the input is empty
+					if (strlen(buffer) > 0) {
+						token = buffer;
+
+						HKEY key;
+						if (RegCreateKey(HKEY_CURRENT_USER, _T("Software\\OpenGrabeso\\Octissimo"), &key) == 0) {
+							RegSetValueEx(key, _T("token"), 0, REG_SZ, (const BYTE *) buffer, strlen(buffer));
+							RegCloseKey(key);
+						}
+					}
+
+				}
+				EndDialog(hDlg, LOWORD(wParam));
+				return (INT_PTR) TRUE;
+			}
+			break;
+	}
+	return (INT_PTR) FALSE;
+}
+
 
 LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) {
 	int wmId, wmEvent;
@@ -161,6 +224,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) 
 					GetCursorPos(&lpClickPoint);
 					hPopMenu = CreatePopupMenu();
 					InsertMenu(hPopMenu, 0xFFFFFFFF, MF_BYPOSITION | MF_STRING, IDM_ABOUT, _T("About"));
+					InsertMenu(hPopMenu, 0xFFFFFFFF, MF_BYPOSITION | MF_STRING, IDM_LOGIN, _T("Login"));
 					InsertMenu(hPopMenu, 0xFFFFFFFF, MF_SEPARATOR, IDM_SEP, _T("SEP"));
 					InsertMenu(hPopMenu, 0xFFFFFFFF, uFlag, IDM_CHECK, _T("Check status"));
 					InsertMenu(hPopMenu, 0xFFFFFFFF, MF_SEPARATOR, IDM_SEP, _T("SEP"));
@@ -184,6 +248,9 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) 
 				case IDM_ABOUT:
 					DialogBox(hInst, MAKEINTRESOURCE(IDD_ABOUTBOX), hWnd, About);
 					break;
+				case IDM_LOGIN:
+					DialogBox(hInst, MAKEINTRESOURCE(IDD_LOGINBOX), hWnd, Login);
+					break;
 				case IDM_CHECK:
 					UpdateStatus();
 					break;
@@ -204,19 +271,3 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) 
 	return 0;
 }
 
-// Message handler for about box.
-INT_PTR CALLBACK About(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam) {
-	UNREFERENCED_PARAMETER(lParam);
-	switch (message) {
-		case WM_INITDIALOG:
-			return (INT_PTR) TRUE;
-
-		case WM_COMMAND:
-			if (LOWORD(wParam) == IDOK || LOWORD(wParam) == IDCANCEL) {
-				EndDialog(hDlg, LOWORD(wParam));
-				return (INT_PTR) TRUE;
-			}
-			break;
-	}
-	return (INT_PTR) FALSE;
-}
