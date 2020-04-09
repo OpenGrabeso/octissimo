@@ -31,5 +31,5 @@ if(MINGW)
     # For anything else, assumingly Visual Studio at this point, use a different set of compile flags
 endif(MINGW)
 
-add_executable(Octissimo WIN32 main.cpp resource.rc GithubStatus.cpp GithubStatus.h resource.h)
+add_executable(Octissimo WIN32 main.cpp resource.rc GithubStatus.cpp GithubStatus.h resource.h Request.cpp Request.h)
 target_link_libraries(Octissimo ${YOUR_LIBRARIES})

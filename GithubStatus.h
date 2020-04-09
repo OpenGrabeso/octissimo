@@ -5,9 +5,8 @@
 #ifndef OCTISSIMO_GITHUBSTATUS_H
 #define OCTISSIMO_GITHUBSTATUS_H
 
-#include "win.h"
-#include <Winhttp.h>
-#include <string>
+#include <functional>
+#include "Request.h"
 
 struct Status {
 	std::string icon;
@@ -15,28 +14,9 @@ struct Status {
 	std::string timestamp;
 };
 
-class WinHttpHandle {
-	HINTERNET handle;
-
-	public:
-	WinHttpHandle() {
-		handle = nullptr;
-	}
-
-	~WinHttpHandle() {
-		if (handle) WinHttpCloseHandle(handle);
-	}
-
-	WinHttpHandle &operator = (HINTERNET h) {handle = h;return *this;}
-	operator HINTERNET () const {return handle;}
-	operator bool () const {return handle != nullptr;}
-};
-
 class GithubStatus {
 	Status status;
-
-	WinHttpHandle hSession;
-	WinHttpHandle hConnect;
+	Request request;
 
 	[[nodiscard]] const Status &getStatus() const {return status;}
 
@@ -47,7 +27,7 @@ class GithubStatus {
 	GithubStatus();
 	~GithubStatus();
 
-	void update(void (*callback)(const Status &));
+	void update(std::function<void(const Status &)> callback);
 };
 
 

@@ -4,6 +4,7 @@
 
 #include "win.h"
 #include "resource.h"
+#include <functional>
 #include "GithubStatus.h"
 
 #define MAX_LOADSTRING 100
