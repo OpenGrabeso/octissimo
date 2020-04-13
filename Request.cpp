@@ -48,5 +48,6 @@ void Request::update(const wchar_t *endpoint, std::function<void(const std::stri
 		} while (dwSize > 0);
 	}
 
+	callback(response);
 
 }
