@@ -2,30 +2,40 @@
 // Created by Ondra on 9.4.2020.
 //
 
-#include <vector>
 #include "Request.h"
+#include <vector>
+#include <algorithm>
 
-Request::Request(const wchar_t *url) {
+std::wstring widestring(std::string s) {
+	std::wstring ws(s.size(), L' '); // Overestimate number of code points.
+	ws.resize(std::mbstowcs(&ws[0], s.c_str(), s.size())); // Shrink to fit.
+	return ws;
+}
+
+
+Request::Request(const char *url) {
 
 	hSession = WinHttpOpen(L"Octissimo/1.0", WINHTTP_ACCESS_TYPE_DEFAULT_PROXY, WINHTTP_NO_PROXY_NAME,
 								  WINHTTP_NO_PROXY_BYPASS, 0);
 	// Specify an HTTP server.
 	if (hSession) {
-		hConnect = WinHttpConnect(hSession, url, INTERNET_DEFAULT_HTTPS_PORT, 0);
+		hConnect = WinHttpConnect(hSession, widestring(url).c_str(), INTERNET_DEFAULT_HTTPS_PORT, 0);
 	}
 
 }
 
-void Request::update(const wchar_t *endpoint, std::function<void(const std::string &)> callback) {
+void Request::update(const char *endpoint, std::function<void(const std::string &)> callback, string headers) {
 	std::string response;
 
 	BOOL bResults = FALSE;
 	WinHttpHandle hRequest;
 	if (hConnect) {
-		hRequest = WinHttpOpenRequest(hConnect, L"GET", endpoint, NULL, WINHTTP_NO_REFERER, NULL, WINHTTP_FLAG_SECURE);
+		const wchar_t *typeJson = L"application/json";
+		const wchar_t *acceptTypes[] = {typeJson, nullptr};
+		hRequest = WinHttpOpenRequest(hConnect, L"GET", widestring(endpoint).c_str(), NULL, WINHTTP_NO_REFERER, acceptTypes, WINHTTP_FLAG_SECURE);
 	}
 	if (hRequest) {
-		bResults = WinHttpSendRequest(hRequest, WINHTTP_NO_ADDITIONAL_HEADERS, 0, WINHTTP_NO_REQUEST_DATA, 0, 0, 0);
+		bResults = WinHttpSendRequest(hRequest, headers.empty() ? WINHTTP_NO_ADDITIONAL_HEADERS : widestring(headers).c_str(), 0, WINHTTP_NO_REQUEST_DATA, 0, 0, 0);
 	}
 	if (bResults) {
 		bResults = WinHttpReceiveResponse(hRequest, NULL);/**/

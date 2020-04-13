@@ -20,8 +20,8 @@ class GithubStatus {
 
 	[[nodiscard]] const Status &getStatus() const {return status;}
 
-	static constexpr auto url = L"kctbh9vrtdwd.statuspage.io";
-	static constexpr auto endpoint = L"/api/v2/status.json";
+	static constexpr auto url = "kctbh9vrtdwd.statuspage.io";
+	static constexpr auto endpoint = "/api/v2/status.json";
 
 	public:
 	GithubStatus();

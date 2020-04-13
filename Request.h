@@ -9,6 +9,12 @@
 #include "win.h"
 #include <Winhttp.h>
 #include <string>
+#include <map>
+
+using std::map;
+using std::string;
+
+std::wstring widestring(std::string s);
 
 class WinHttpHandle {
 	HINTERNET handle;
@@ -35,9 +41,9 @@ class Request {
 
 
 	public:
-	Request(const wchar_t *url);
+	Request(const char *url);
 
-	void update(const wchar_t *endpoint, std::function<void(const std::string &)> callback);
+	void update(const char *endpoint, std::function<void(const std::string &)> callback, string headers = "");
 };
 
 

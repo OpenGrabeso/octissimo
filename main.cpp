@@ -5,7 +5,10 @@
 #include "win.h"
 #include "resource.h"
 #include <functional>
+#include <json.hpp>
 #include "GithubStatus.h"
+
+using json = nlohmann::json;
 
 #define MAX_LOADSTRING 100
 #define   WM_USER_SHELLICON (WM_USER + 1)
@@ -20,6 +23,7 @@ TCHAR szWindowClass[MAX_LOADSTRING];         // the main window class name
 TCHAR szApplicationToolTip[MAX_LOADSTRING];       // the main window class name
 
 std::string token;
+std::string login = "Not logged in";
 
 GithubStatus *status;
 Status lastStatus;
@@ -118,6 +122,22 @@ ATOM MyRegisterClass(HINSTANCE hInstance) {
 	return RegisterClassEx(&wcex);
 }
 
+void PerformLogin() {
+	if (!token.empty()) {
+		try {
+			auto request = Request("api.github.com");
+			auto callback = [](const std::string &response) {
+				auto result = json::parse(response);
+				login = result["login"];
+			};
+			string auth = "Authorization: Bearer " + token;
+			request.update("/user", callback, auth);
+		} catch(...) {
+			fprintf(stderr, "Some exception during login\n");
+		}
+	}
+}
+
 BOOL InitInstance(HINSTANCE hInstance, int nCmdShow) {
 
 	UNREFERENCED_PARAMETER(nCmdShow);
@@ -154,6 +174,8 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow) {
 		RegCloseKey(key);
 	}
 
+	PerformLogin();
+
 	return TRUE;
 }
 
@@ -180,6 +202,8 @@ INT_PTR CALLBACK Login(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam) {
 		case WM_INITDIALOG:
 			// security / privacy: we allow the user only to set them token, not to retrieve it
 			//SetDlgItemText(hDlg, IDC_TOKENEDIT, token.c_str());
+
+			SetDlgItemText(hDlg, IDC_CURRENTUSERTEXT, login.c_str());
 			return (INT_PTR) TRUE;
 
 		case WM_COMMAND:
@@ -198,6 +222,8 @@ INT_PTR CALLBACK Login(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam) {
 							RegSetValueEx(key, _T("token"), 0, REG_SZ, (const BYTE *) buffer, strlen(buffer));
 							RegCloseKey(key);
 						}
+
+						PerformLogin();
 					}
 
 				}
