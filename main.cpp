@@ -9,6 +9,7 @@
 #include "GithubStatus.h"
 
 using json = nlohmann::json;
+using std::wstring;
 
 #define MAX_LOADSTRING 100
 #define   WM_USER_SHELLICON (WM_USER + 1)
@@ -16,7 +17,7 @@ using json = nlohmann::json;
 
 HINSTANCE hInst;   // current instance
 HWND hWnd;
-NOTIFYICONDATA nidApp;
+NOTIFYICONDATAW nidApp;
 HMENU hPopMenu;
 TCHAR szTitle[MAX_LOADSTRING];               // The title bar text
 TCHAR szWindowClass[MAX_LOADSTRING];         // the main window class name
@@ -47,19 +48,27 @@ INT StatusIcon(const char *statusText) {
 
 void StatusReceivedFirst(const Status &s) {
 	lastStatus = s;
-	strncpy(nidApp.szTip, lastStatus.message.c_str(), sizeof(nidApp.szTip) - 1);
+	wcsncpy(nidApp.szTip, widestring(lastStatus.message).c_str(), sizeof(nidApp.szTip)/sizeof(*nidApp.szTip) - 1);
 	nidApp.uFlags |= NIF_TIP;
 	nidApp.hIcon = LoadIcon(hInst, MAKEINTRESOURCE(StatusIcon(s.icon.c_str())));
-	Shell_NotifyIcon(NIM_MODIFY, &nidApp);
+	Shell_NotifyIconW(NIM_MODIFY, &nidApp);
+}
+
+void DisplayBaloon(wstring title, wstring message) {
+	nidApp.uFlags |= NIF_INFO;
+	nidApp.dwInfoFlags = NIIF_INFO;
+	wcsncpy(nidApp.szInfoTitle, title.c_str(), sizeof(nidApp.szInfoTitle)/sizeof(*nidApp.szInfoTitle) - 1);
+	wcsncpy(nidApp.szInfo, message.c_str(), sizeof(nidApp.szInfo)/sizeof(*nidApp.szInfo) - 1);
+	Shell_NotifyIconW(NIM_MODIFY, &nidApp);
+	nidApp.uFlags &= ~NIF_INFO;
+
 }
 
 void StatusReceivedNext(const Status &s) {
 	auto message = lastStatus.message;
 	StatusReceivedFirst(s);
 	if (lastStatus.message != message) {
-		nidApp.uFlags |= NIF_INFO;
-		strncpy(nidApp.szInfoTitle, "GitHub Status", sizeof(nidApp.szInfoTitle) - 1);
-		strncpy(nidApp.szInfo, lastStatus.message.c_str(), sizeof(nidApp.szInfoTitle) - 1);
+		DisplayBaloon(L"GitHub Status", widestring(lastStatus.message));
 	}
 }
 
@@ -129,9 +138,11 @@ void PerformLogin() {
 	if (!token.empty()) {
 		try {
 			auto request = Request("api.github.com");
-			auto callback = [](const std::string &response, const std::map<string, string> &headers) {
-				auto result = json::parse(response);
-				login = result["login"];
+			auto callback = [](const std::string &response, const std::map<string, string> &headers, long statusCode) {
+				if (statusCode >= 200 && statusCode < 300) {
+					auto result = json::parse(response);
+					login = result["login"];
+				}
 			};
 			string auth = "Authorization: Bearer " + token;
 			request.update("/user", callback, auth);
@@ -145,17 +156,36 @@ void RefreshNotifications() {
 	if (!token.empty()) {
 		try {
 			auto request = Request("api.github.com");
-			auto callback = [](const std::string &response, const std::map<string, string> &headers) {
-				json result = json::parse(response);
-				notifications = std::make_unique<json>(result);
+			auto callback = [](const std::string &response, const std::map<string, string> &headers, long statusCode) {
 				auto lastModified = headers.find("last-modified");
 				if (lastModified != headers.end()) {
 					lastNotifications = lastModified->second;
 				}
+				// we often get response with statusCode 304 Not Modified
+				if (statusCode >= 200 && statusCode < 300) {
+					json result = json::parse(response);
+					notifications = std::make_unique<json>(result);
+					wstring message;
+					// TODO: filter by repository
+					int count = 0;
+					for (auto n: *notifications) {
+						string title = n["subject"]["title"];
+						// TODO: shorten titles to work better with systray notifications
+						message += widestring(title + "\n");
+						count++;
+						if (count > 2) {
+							message += L"And more...\n";
+						}
+					}
 
+					DisplayBaloon(L"GitHub notifications", message);
+				}
 			};
-			string auth = "Authorization: Bearer " + token;
-			request.update("/notifications", callback, auth);
+			string headers = "Authorization: Bearer " + token;
+			if (!lastNotifications.empty()) {
+				headers += "\nIf-Modified-Since:" + lastNotifications;
+			}
+			request.update("/notifications", callback, headers);
 		} catch(...) {
 			fprintf(stderr, "Some exception during login\n");
 		}
@@ -179,14 +209,14 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow) {
 
 	hMainIcon = LoadIcon(hInstance, (LPCTSTR) MAKEINTRESOURCE(IDI_NONE));
 
-	nidApp.cbSize = sizeof(NOTIFYICONDATA); // sizeof the struct in bytes
+	nidApp.cbSize = sizeof(NOTIFYICONDATAW); // sizeof the struct in bytes
 	nidApp.hWnd = (HWND) hWnd;              //handle of the window which will process this app. messages
 	nidApp.uID = IDI_OCTISSIMO;           //ID of the icon that willl appear in the system tray
 	nidApp.uFlags = NIF_ICON | NIF_MESSAGE | NIF_TIP; //ORing of all the flags
 	nidApp.hIcon = LoadIcon(hInstance, (LPCTSTR) MAKEINTRESOURCE(IDI_NONE)); // handle of the Icon to be displayed, obtained from LoadIcon
 	nidApp.uCallbackMessage = WM_USER_SHELLICON;
-	LoadString(hInstance, IDS_APPTOOLTIP, nidApp.szTip, MAX_LOADSTRING);
-	Shell_NotifyIcon(NIM_ADD, &nidApp);
+	LoadStringW(hInstance, IDS_APPTOOLTIP, nidApp.szTip, MAX_LOADSTRING);
+	Shell_NotifyIconW(NIM_ADD, &nidApp);
 
 	HKEY key;
 	if (RegOpenKeyEx(HKEY_CURRENT_USER, _T("Software\\OpenGrabeso\\Octissimo"), 0, KEY_READ, &key) == 0) {
@@ -304,9 +334,10 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) 
 					break;
 				case IDM_CHECK:
 					UpdateStatus();
+					RefreshNotifications();
 					break;
 				case IDM_EXIT:
-					Shell_NotifyIcon(NIM_DELETE, &nidApp);
+					Shell_NotifyIconW(NIM_DELETE, &nidApp);
 					DestroyWindow(hWnd);
 					break;
 				default:

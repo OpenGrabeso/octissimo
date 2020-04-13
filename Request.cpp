@@ -7,11 +7,17 @@
 #include <map>
 #include <sstream>
 #include <algorithm>
+#include <regex>
 
 std::wstring widestring(std::string s) {
-	std::wstring ws(s.size(), L' '); // Overestimate number of code points.
-	ws.resize(std::mbstowcs(&ws[0], s.c_str(), s.size())); // Shrink to fit.
-	return ws;
+
+	DWORD len = MultiByteToWideChar(CP_UTF8, 0, s.c_str(), -1, NULL, 0);
+
+	std::wstring tgt = std::wstring(len - 1, ' ');
+
+	MultiByteToWideChar(CP_UTF8, 0, s.c_str(), -1, tgt.data(), len);
+
+	return tgt;
 }
 
 std::string stringFromWide(std::wstring s) {
@@ -64,11 +70,12 @@ std::string tolower(std::string str) {
 
 void Request::update(
 		  const char *endpoint,
-		  std::function<void(const std::string &, const std::map<string, string> &)> callback,
+		  std::function<void(const std::string &, const std::map<string, string> &, long)> callback,
 		  string headers
 		  ) {
 	string response;
 	std::map<string, string> responseHeaders;
+	long statusCode = 0;
 
 	BOOL bResults = FALSE;
 	WinHttpHandle hRequest;
@@ -132,12 +139,19 @@ void Request::update(
 					auto name = l.substr(0, pos);
 					auto value = l.substr(pos + 1);
 					responseHeaders.insert({tolower(trim(name)), trim(value)});
+				} else {
+					std::regex status("HTTP/1.1 ([0-9]+) .*");
+					std::smatch matches;
+					std::regex_search(l, matches, status);
+					if (matches.size() >= 2) {
+						statusCode = strtoul(matches[1].str().c_str(), nullptr, 10);
+					}
 				}
 			}
 		}
 	}
 
 
-	callback(response, responseHeaders);
+	callback(response, responseHeaders, statusCode);
 
 }

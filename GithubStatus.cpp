@@ -18,7 +18,7 @@ GithubStatus::~GithubStatus() {
 
 void GithubStatus::update(std::function<void(const Status &)> callback) {
 
-	auto reqCallback = [this, callback](const std::string &response, const std::map<string, string> &headers) -> void {
+	auto reqCallback = [this, callback](const std::string &response, const std::map<string, string> &headers, long statusCode) -> void {
 		auto result = json::parse(response);
 
 		// https://www.githubstatus.com/api/#status
@@ -37,11 +37,12 @@ void GithubStatus::update(std::function<void(const Status &)> callback) {
 		  }
 		}
 		*/
-
-		status.icon = result["status"]["indicator"].get<std::string>();
-		status.message = result["status"]["description"].get<std::string>();
-		status.timestamp = result["page"]["updated_at"].get<std::string>();
-		callback(status);
+		if (statusCode >=  200 && statusCode < 300) {
+			status.icon = result["status"]["indicator"].get<std::string>();
+			status.message = result["status"]["description"].get<std::string>();
+			status.timestamp = result["page"]["updated_at"].get<std::string>();
+			callback(status);
+		}
 	};
 	try {
 		request.update(endpoint, reqCallback);
