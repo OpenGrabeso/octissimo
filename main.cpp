@@ -28,6 +28,9 @@ std::string login = "Not logged in";
 GithubStatus *status;
 Status lastStatus;
 
+std::unique_ptr<json> notifications;
+string lastNotifications;
+
 ATOM MyRegisterClass(HINSTANCE hInstance);
 
 BOOL InitInstance(HINSTANCE, int nCmdShow);
@@ -126,12 +129,33 @@ void PerformLogin() {
 	if (!token.empty()) {
 		try {
 			auto request = Request("api.github.com");
-			auto callback = [](const std::string &response) {
+			auto callback = [](const std::string &response, const std::map<string, string> &headers) {
 				auto result = json::parse(response);
 				login = result["login"];
 			};
 			string auth = "Authorization: Bearer " + token;
 			request.update("/user", callback, auth);
+		} catch(...) {
+			fprintf(stderr, "Some exception during login\n");
+		}
+	}
+}
+
+void RefreshNotifications() {
+	if (!token.empty()) {
+		try {
+			auto request = Request("api.github.com");
+			auto callback = [](const std::string &response, const std::map<string, string> &headers) {
+				json result = json::parse(response);
+				notifications = std::make_unique<json>(result);
+				auto lastModified = headers.find("last-modified");
+				if (lastModified != headers.end()) {
+					lastNotifications = lastModified->second;
+				}
+
+			};
+			string auth = "Authorization: Bearer " + token;
+			request.update("/notifications", callback, auth);
 		} catch(...) {
 			fprintf(stderr, "Some exception during login\n");
 		}
@@ -175,6 +199,7 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow) {
 	}
 
 	PerformLogin();
+	RefreshNotifications();
 
 	return TRUE;
 }

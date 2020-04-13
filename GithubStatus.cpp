@@ -18,7 +18,7 @@ GithubStatus::~GithubStatus() {
 
 void GithubStatus::update(std::function<void(const Status &)> callback) {
 
-	auto reqCallback = [this, callback](const std::string &response) -> void {
+	auto reqCallback = [this, callback](const std::string &response, const std::map<string, string> &headers) -> void {
 		auto result = json::parse(response);
 
 		// https://www.githubstatus.com/api/#status

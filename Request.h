@@ -43,7 +43,7 @@ class Request {
 	public:
 	Request(const char *url);
 
-	void update(const char *endpoint, std::function<void(const std::string &)> callback, string headers = "");
+	void update(const char *endpoint, std::function<void(const std::string &, const std::map<string, string> &)> callback, string headers = "");
 };
 
 
