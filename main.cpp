@@ -301,7 +301,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) 
 		case WM_USER_SHELLICON:
 			// systray msg callback
 			switch (LOWORD(lParam)) {
-				case WM_RBUTTONDOWN:
+				case WM_RBUTTONDOWN: {
 					UINT uFlag = MF_BYPOSITION | MF_STRING;
 					GetCursorPos(&lpClickPoint);
 					hPopMenu = CreatePopupMenu();
@@ -316,11 +316,17 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) 
 					TrackPopupMenu(hPopMenu, TPM_LEFTALIGN | TPM_LEFTBUTTON | TPM_BOTTOMALIGN, lpClickPoint.x,
 										lpClickPoint.y, 0, hWnd, NULL);
 					return TRUE;
+				}
+				case NIN_BALLOONUSERCLICK: {
+					ShellExecute(NULL, "open", "https://github.com/notifications", NULL, NULL, SW_SHOWNORMAL);
+					return TRUE;
+				}
 
 			}
 			break;
 		case IDT_TIMER:
 			UpdateStatus();
+			RefreshNotifications();
 			break;
 		case WM_COMMAND:
 			wmId = LOWORD(wParam);
