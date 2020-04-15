@@ -175,6 +175,7 @@ void RefreshNotifications() {
 						count++;
 						if (count > 2) {
 							message += L"And more...\n";
+							break;
 						}
 					}
 
